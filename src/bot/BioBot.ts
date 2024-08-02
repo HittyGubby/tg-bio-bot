@@ -19,6 +19,7 @@ export default class BioBot {
     static $TIME = '${time}'
     static ALIAS_SPLIT = '::'
     static BATCH_SIZE = 6;
+
     private dbHeller: DbHeller = new DbHeller()
     private tmp_current_bios: UserBio[] = []
 
@@ -54,7 +55,7 @@ export default class BioBot {
             {command: 'history', description: '列出单个用户bio历史记录，发送id'},
             {command: 'alias', description: '设置用户别名，可发送多个，空格分隔 (id::alias)'},
             {command: 'format', description: `用户bio改变后通知格式,可用变量为 \${alias} \${name} \${bio}`},
-            {command: 'send', description: '切换是否发送到当前群聊'},
+            {command: 'send', description: '切换是否发送到当前私聊'},
         ]
 
         this.commandHandler()
@@ -188,14 +189,19 @@ export default class BioBot {
         })
 
         bot.command('send', async ctx => {
-
+            const userId = ctx.message.text.split(' ')[1]
+            if (!userId) {
+                return ctx.reply('请提供用户ID')
+            }
+        
             this.dbHeller.getChatFormatByChatId(ctx.chat.id).then(chatFormat => {
                 if (chatFormat) {
                     chatFormat.send_to_chat = !chatFormat.send_to_chat
                     this.dbHeller.updateChatFormat(chatFormat)
                 } else {
                     this.dbHeller.insertChatFormat({
-                        chat_id: ctx.chat.id,
+                        //chat_id: ctx.chat.id,
+                        chat_id: userId,
                         format: BioBot.DEFAULT_FORMAT,
                         send_to_chat: true
                     })
@@ -207,7 +213,6 @@ export default class BioBot {
             })
 
         })
-
     }
 
     private actionHandler() {
